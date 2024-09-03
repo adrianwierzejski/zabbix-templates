@@ -1,0 +1,100 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+      name: Templates/Applications
+  templates:
+    - uuid: 2267cb898e0147cfad678b66a488f26d
+      template: 'Remote Zabbix proxy availability'
+      name: 'Remote Zabbix proxy availability'
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: 9c876b1063274e9b8b620c5f5ccc0d93
+          name: 'Zabbix proxies'
+          type: INTERNAL
+          key: 'zabbix[proxy,discovery]'
+          history: '0'
+          trends: '0'
+          value_type: TEXT
+      discovery_rules:
+        - uuid: 4e39b5c6deaa460b953a0869c613067a
+          name: 'Proxies discovery'
+          type: DEPENDENT
+          key: proxy.discovery
+          delay: '0'
+          item_prototypes:
+            - uuid: 0a32aaa34e2a448088087a87ca546e25
+              name: '{#PNAME}: Proxy hosts count'
+              type: DEPENDENT
+              key: 'proxy.hosts[{#PNAME}]'
+              delay: '0'
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[?(@.name==''{#PNAME}'')].hosts.first()'
+              master_item:
+                key: 'zabbix[proxy,discovery]'
+            - uuid: 6a5a8f5429874ebd98f6ecb91a5bad36
+              name: '{#PNAME}: Proxy last seen'
+              type: DEPENDENT
+              key: 'proxy.lastseen[{#PNAME}]'
+              delay: '0'
+              trends: '0'
+              units: s
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[?(@.name==''{#PNAME}'')].last_seen.first()'
+              master_item:
+                key: 'zabbix[proxy,discovery]'
+            - uuid: 175ea5e15cb54e0283bb86b6eb054848
+              name: '{#PNAME}: Proxy state'
+              type: DEPENDENT
+              key: 'proxy.state[{#PNAME}]'
+              delay: '0'
+              trends: '0'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[?(@.name==''{#PNAME}'')].state.first()'
+              master_item:
+                key: 'zabbix[proxy,discovery]'
+              trigger_prototypes:
+                - uuid: 0750f3c261184e3f9828f20881bf82ab
+                  expression: 'last(/Remote Zabbix proxy availability/proxy.state[{#PNAME}])<>"online"'
+                  name: '{#PNAME}: Proxy state changed to Offline'
+                  priority: HIGH
+            - uuid: 54cfddf1c8c6415c8b83bf74b642ba62
+              name: '{#PNAME}: Proxy version'
+              type: DEPENDENT
+              key: 'proxy.version[{#PNAME}]'
+              delay: '0'
+              trends: '0'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[?(@.name==''{#PNAME}'')].version.first()'
+              master_item:
+                key: 'zabbix[proxy,discovery]'
+            - uuid: 7df393db4d1a489d80833e2465a5c353
+              name: '{#PNAME}: Proxy last connection'
+              type: INTERNAL
+              key: 'zabbix[proxy,{#PNAME},lastaccess]'
+              trends: '0'
+              units: unixtime
+          master_item:
+            key: 'zabbix[proxy,discovery]'
+          lld_macro_paths:
+            - lld_macro: '{#PNAME}'
+              path: $.name
+      tags:
+        - tag: class
+          value: software
+        - tag: target
+          value: proxy
+        - tag: target
+          value: zabbix
